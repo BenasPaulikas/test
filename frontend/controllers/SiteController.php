@@ -1,17 +1,20 @@
 <?php
 namespace frontend\controllers;
 
-use Yii;
 use common\models\LoginForm;
+use common\models\User;
+use frontend\models\ContactForm;
 use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
+use frontend\models\SendForm;
 use frontend\models\SignupForm;
-use frontend\models\ContactForm;
+use Yii;
 use yii\base\InvalidParamException;
+use yii\filters\AccessControl;
+use yii\filters\VerbFilter;
+use yii\helpers\ArrayHelper;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
-use yii\filters\VerbFilter;
-use yii\filters\AccessControl;
 
 /**
  * Site controller
@@ -26,7 +29,7 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['logout', 'signup'],
+                'only' => ['logout', 'signup', 'send'],
                 'rules' => [
                     [
                         'actions' => ['signup'],
@@ -34,7 +37,7 @@ class SiteController extends Controller
                         'roles' => ['?'],
                     ],
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['logout', 'send'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -132,13 +135,33 @@ class SiteController extends Controller
     }
 
     /**
-     * Displays about page.
+     * Send money to other user
      *
      * @return mixed
      */
-    public function actionAbout()
+    public function actionSend()
     {
-        return $this->render('about');
+        $model = new SendForm();
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+            Yii::$app->session->setFlash('success', 'Money sent!');
+            $user = Yii::$app->user->identity;
+            /* @var User $user */
+            $user->balance = $user->balance - $model->amount;
+            if ($user->save(false)) {
+                $receiver = User::find()->where(['id' => $model->user_id])->one();
+                /* @var User $receiver */
+                $receiver->balance = $receiver->balance + $model->amount;
+                $receiver->save(false);
+            }
+            return $this->redirect(['index']);
+        }
+        $users = ArrayHelper::map(User::find()->all(), 'id', 'username');
+
+        return $this->render('send', [
+            'model' => $model,
+            'users' => $users
+        ]);
     }
 
     /**

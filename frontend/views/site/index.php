@@ -2,16 +2,20 @@
 
 /* @var $this yii\web\View */
 
-$this->title = 'My Yii Application';
+use yii\helpers\Html;
+
+$this->title = 'SafeBank';
 ?>
 <div class="site-index">
 
     <div class="jumbotron">
-        <h1>Congratulations!</h1>
+        <h1>Your money in SAFE bank!</h1>
 
-        <p class="lead">You have successfully created your Yii-powered application.</p>
+        <p class="lead">Trust our top notch money protection.</p>
 
-        <p><a class="btn btn-lg btn-success" href="http://www.yiiframework.com">Get started with Yii</a></p>
+        <?php if (Yii::$app->user->isGuest): ?>
+            <p><?= Html::a('Sign UP', ['signup'], ['class' => 'btn btn-lg btn-success']) ?></p>
+        <?php endif ?>
     </div>
 
     <div class="body-content">
