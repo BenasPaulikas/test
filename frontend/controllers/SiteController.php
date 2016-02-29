@@ -174,15 +174,50 @@ class SiteController extends Controller
         $model = new SignupForm();
         if ($model->load(Yii::$app->request->post())) {
             if ($user = $model->signup()) {
-                if (Yii::$app->getUser()->login($user)) {
-                    return $this->goHome();
-                }
+                Yii::$app->session->setFlash('success', 'A message was sent to your email address. It contains a confirmation link that you must click to complete registration.');
+                Yii::$app->mailer->compose('site/signup', ['user' => $user])
+                    ->setFrom(Yii::$app->params['adminEmail'])
+                    ->setTo($user->email)
+                    ->setSubject("Registration confirmation - " . Yii::$app->params['project'])
+                    ->send();
+                return $this->goHome();
             }
         }
 
         return $this->render('signup', [
             'model' => $model,
         ]);
+    }
+
+    /**
+     * Confirms user account
+     * @param $email User::$email
+     * @param $token User::$token
+     * @return mixed
+     */
+    public function actionConfirm($email, $token)
+    {
+        /* @var $model User */
+        $model = User::find()->where(['email' => $email])->one();
+        $error = false;
+
+        if (!$model) {
+            $error = "User was not found";
+        } else if ($model->status != $model::STATUS_UNACTIVATED) {
+            $error = "User is already activated or deleted";
+        } else if ($model->token != $token) {
+            $error = "Invalid token";
+        }
+
+        if ($error) {
+            Yii::$app->session->setFlash('danger', $error);
+            return $this->goHome();
+        } else {
+            Yii::$app->session->setFlash('success', 'User was successfully confirmed. Now you can login!');
+            $model->status = $model::STATUS_ACTIVE;
+            $model->save(false);
+            return $this->redirect(['site/login']);
+        }
     }
 
     /**

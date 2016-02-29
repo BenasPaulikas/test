@@ -2,7 +2,7 @@
 
 /* @var $this yii\web\View */
 
-$this->title = 'SafeBank';
+$this->title = Yii::$app->params['project'];
 ?>
 <div class="site-index">
 

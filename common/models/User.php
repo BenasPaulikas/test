@@ -21,11 +21,13 @@ use yii\web\IdentityInterface;
  * @property integer $updated_at
  * @property string $password write-only password
  * @property integer $balance
+ * @property string $token
  */
 class User extends ActiveRecord implements IdentityInterface
 {
     const STATUS_DELETED = 0;
     const STATUS_ACTIVE = 10;
+    const STATUS_UNACTIVATED = 20;
 
     /**
      * @inheritdoc
@@ -118,7 +120,7 @@ class User extends ActiveRecord implements IdentityInterface
             ['balance', 'number', 'on' => 'adminUpdate'],
             [['email'], 'email'],
             ['status', 'default', 'value' => self::STATUS_ACTIVE],
-            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_DELETED]],
+            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_DELETED, self::STATUS_UNACTIVATED]],
         ];
     }
 
@@ -189,5 +191,14 @@ class User extends ActiveRecord implements IdentityInterface
     public function removePasswordResetToken()
     {
         $this->password_reset_token = null;
+    }
+
+    /**
+     * Returns a token which represents specific user
+     * !!This is visible by user(When receiving confirmation email!!
+     */
+    public function getToken()
+    {
+        return sha1($this->email . $this->username);
     }
 }
